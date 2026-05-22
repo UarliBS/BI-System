@@ -1,0 +1,19 @@
+# Logs
+logs/
+*.log
+
+# Sistema operacional
+.DS_Store
+Thumbs.db
+desktop.ini
+
+# Editores
+.vscode/
+.idea/
+
+# Dependencias futuras
+node_modules/
+
+# Builds futuros
+dist/
+build/

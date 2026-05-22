@@ -1,0 +1,537 @@
+<!doctype html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>BI Retail - Protótipo PEI</title>
+    <link rel="stylesheet" href="styles.css" />
+  </head>
+  <body class="logged-out">
+    <section class="login-screen" id="loginScreen">
+      <div class="login-card">
+        <div class="brand login-brand">
+          <span class="brand-mark">BI</span>
+          <div>
+            <strong>BI Retail</strong>
+            <small>Protótipo PEI</small>
+          </div>
+        </div>
+        <h1>Acesso por funcionário</h1>
+        <p>Entre com um perfil para visualizar somente as funcionalidades permitidas para o cargo.</p>
+
+        <form id="loginForm" class="login-form">
+          <label>
+            E-mail
+            <input id="loginEmail" type="email" value="funcionario@empresa.com" required />
+          </label>
+          <label>
+            Senha
+            <input id="loginPassword" type="password" value="123456" required />
+          </label>
+          <label>
+            Cargo
+            <select id="loginRole" required>
+              <option value="sales">Analista de Vendas</option>
+              <option value="stock">Gestor de Estoque e Reposição</option>
+              <option value="crm">Especialista em CRM</option>
+              <option value="margin">Analista de Margem e Lucro</option>
+            </select>
+          </label>
+          <button type="submit">Entrar no sistema</button>
+        </form>
+
+        <div class="access-preview">
+          <strong>Acessos do protótipo</strong>
+          <span>Analista de Vendas: análise de vendas.</span>
+          <span>Gestor de Estoque: estoque, reposição e alertas.</span>
+          <span>Especialista em CRM: segmentação e campanhas.</span>
+          <span>Analista: margem de lucro e desempenho do produto.</span>
+        </div>
+      </div>
+
+      <div class="login-visual">
+        <div class="visual-panel">
+          <span class="visual-chip">BI Retail</span>
+          <h2>Business Intelligence com acesso controlado por função</h2>
+          <p>Cada funcionário entra direto no módulo correspondente às suas regras de negócio.</p>
+          <div class="visual-bars">
+            <span style="height: 44%"></span>
+            <span style="height: 68%"></span>
+            <span style="height: 54%"></span>
+            <span style="height: 82%"></span>
+            <span style="height: 74%"></span>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <aside class="sidebar" aria-label="Menu principal">
+      <div class="brand">
+        <span class="brand-mark">BI</span>
+        <div>
+          <strong>BI Retail</strong>
+          <small>Business Intelligence</small>
+        </div>
+      </div>
+
+      <nav class="nav">
+        <button class="nav-item active" data-view="dashboard">Dashboard</button>
+        <button class="nav-item" data-view="sales">Vendas</button>
+        <button class="nav-item" data-view="stock">Estoque</button>
+        <button class="nav-item" data-view="customers">Clientes</button>
+        <button class="nav-item" data-view="campaigns">Campanhas</button>
+        <button class="nav-item" data-view="reports">Relatórios</button>
+      </nav>
+
+      <div class="profile-card">
+        <span>Perfil ativo</span>
+        <strong id="activeRole">Não autenticado</strong>
+        <small id="accessDescription">Faça login para acessar o sistema.</small>
+        <button class="logout-button" id="logoutButton" type="button">Sair</button>
+      </div>
+    </aside>
+
+    <main class="app-shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Sistema de BI</p>
+          <h1 id="pageTitle">Dashboard Geral</h1>
+          <p class="access-note" id="accessNote">Acesso controlado por perfil.</p>
+        </div>
+
+        <form class="filters" id="globalFilters">
+          <label>
+            Período
+            <select id="periodFilter">
+              <option value="diario">Diário</option>
+              <option value="semanal">Semanal</option>
+              <option value="mensal" selected>Mensal</option>
+              <option value="trimestral">Trimestral</option>
+              <option value="anual">Anual</option>
+            </select>
+          </label>
+          <label>
+            Região
+            <select id="regionFilter">
+              <option value="todas">Todas</option>
+              <option value="nordeste">Nordeste</option>
+              <option value="sudeste">Sudeste</option>
+              <option value="sul">Sul</option>
+            </select>
+          </label>
+          <label>
+            Loja
+            <select id="storeFilter">
+              <option value="todas">Todas</option>
+              <option value="centro">Centro</option>
+              <option value="norte">Norte</option>
+              <option value="online">Online</option>
+            </select>
+          </label>
+          <button type="submit">Aplicar</button>
+        </form>
+      </header>
+
+      <section class="view active" id="dashboard" aria-labelledby="pageTitle">
+        <div class="kpi-grid">
+          <article class="kpi accent-blue">
+            <span>Vendas totais</span>
+            <strong id="kpiSales">R$ 1,28 mi</strong>
+            <small>+12,4% no período</small>
+          </article>
+          <article class="kpi accent-green">
+            <span>Margem de lucro</span>
+            <strong id="kpiMargin">31,8%</strong>
+            <small>Alta em eletrônicos</small>
+          </article>
+          <article class="kpi accent-teal">
+            <span>Ticket médio</span>
+            <strong id="kpiTicket">R$ 184</strong>
+            <small>E-commerce lidera</small>
+          </article>
+          <article class="kpi accent-red">
+            <span>Estoque crítico</span>
+            <strong id="kpiCritical">23 itens</strong>
+            <small>8 com risco de ruptura</small>
+          </article>
+        </div>
+
+        <div class="dashboard-grid">
+          <section class="panel wide">
+            <div class="panel-header">
+              <h2>Evolução de vendas</h2>
+              <div class="segmented" aria-label="Tipo de visualização">
+                <button class="active" data-chart-mode="sales">Vendas</button>
+                <button data-chart-mode="margin">Margem</button>
+              </div>
+            </div>
+            <canvas id="salesCanvas" height="220" aria-label="Gráfico de vendas"></canvas>
+          </section>
+
+          <section class="panel">
+            <div class="panel-header">
+              <h2>Alertas</h2>
+              <button class="ghost" id="clearAlerts">Limpar</button>
+            </div>
+            <div class="alert-list" id="alertList"></div>
+          </section>
+
+          <section class="panel">
+            <h2>Módulos do BI</h2>
+            <div class="module-list">
+              <button data-jump="sales"><strong>Vendas</strong><span>RF01 - RF03</span></button>
+              <button data-jump="stock"><strong>Estoque</strong><span>RF04 - RF06</span></button>
+              <button data-jump="customers"><strong>Clientes</strong><span>RF07 - RF09</span></button>
+              <button data-jump="reports"><strong>Margem</strong><span>RF10 - RF12</span></button>
+            </div>
+          </section>
+
+          <section class="panel wide">
+            <div class="panel-header">
+              <h2>Resumo operacional</h2>
+              <button class="ghost" data-jump="reports">Ver relatório</button>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Área</th>
+                    <th>Indicador</th>
+                    <th>Resultado</th>
+                    <th>Status</th>
+                  </tr>
+                </thead>
+                <tbody id="summaryRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="sales">
+        <div class="section-grid sales-grid">
+          <section class="panel wide sales-chart-panel">
+            <div class="panel-header">
+              <h2>Vendas por período</h2>
+              <div class="segmented period-shortcuts">
+                <button data-period="diario">Diário</button>
+                <button data-period="semanal">Semanal</button>
+                <button class="active" data-period="mensal">Mensal</button>
+                <button data-period="trimestral">Trimestral</button>
+                <button data-period="anual">Anual</button>
+              </div>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-dot blue"></i>Vendas realizadas</span>
+              <span><i class="legend-dot amber"></i>Meta do período</span>
+              <span><i class="legend-dot green"></i>Margem média</span>
+            </div>
+            <canvas id="salesDetailCanvas" height="260"></canvas>
+          </section>
+
+          <section class="panel sales-metrics-panel">
+            <div class="panel-header">
+              <h2>Calcular métricas</h2>
+              <button id="calculateMetrics" type="button">Calcular</button>
+            </div>
+            <div class="metric-options" aria-label="Selecionar métricas">
+              <label><input type="checkbox" class="metric-toggle" value="total" checked /> Vendas totais</label>
+              <label><input type="checkbox" class="metric-toggle" value="margin" checked /> Margem</label>
+              <label><input type="checkbox" class="metric-toggle" value="ticket" checked /> Ticket médio</label>
+              <label><input type="checkbox" class="metric-toggle" value="conversion" checked /> Conversão</label>
+            </div>
+            <div class="mini-kpis calculated-kpis is-pending">
+              <span><strong id="salesTotal">R$ 428 mil</strong>Vendas totais</span>
+              <span><strong id="salesMargin">32,4%</strong>Margem</span>
+              <span><strong id="salesAvgTicket">R$ 172</strong>Ticket médio</span>
+              <span><strong id="salesConversion">4,8%</strong>Conversão</span>
+            </div>
+            <p class="calc-status" id="metricStatus">Selecione as métricas e clique em calcular.</p>
+          </section>
+
+          <section class="panel sales-insights-panel">
+            <h2>Leitura do período</h2>
+            <div class="period-insights" id="periodInsights"></div>
+          </section>
+
+          <section class="panel wide period-detail-panel">
+            <div class="panel-header">
+              <h2>Detalhamento por período</h2>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Período</th>
+                    <th>Vendas</th>
+                    <th>Meta</th>
+                    <th>Margem</th>
+                    <th>Ticket médio</th>
+                    <th>Conversão</th>
+                  </tr>
+                </thead>
+                <tbody id="periodRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel wide sales-origin-panel">
+            <div class="panel-header">
+              <h2>Relatório interativo por origem</h2>
+              <input id="salesSearch" type="search" placeholder="Filtrar por loja, região ou canal" />
+            </div>
+            <div class="report-chart-layout">
+              <div>
+                <div class="chart-legend">
+                  <span><i class="legend-dot blue"></i>Vendas por origem</span>
+                  <span><i class="legend-dot green"></i>Margem</span>
+                </div>
+                <canvas id="originCanvas" height="230"></canvas>
+              </div>
+              <div class="origin-summary" id="originSummary"></div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Origem</th>
+                    <th>Região</th>
+                    <th>Canal</th>
+                    <th>Vendas</th>
+                    <th>Margem</th>
+                    <th>Conversão</th>
+                  </tr>
+                </thead>
+                <tbody id="salesRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="stock">
+        <div class="section-grid stock-grid">
+          <section class="panel wide stock-table-panel">
+            <div class="panel-header">
+              <div>
+                <h2 id="stockTableTitle">Estoque atual por produto</h2>
+                <p class="panel-subtitle">Alterne entre visão por produto e visão consolidada por loja.</p>
+              </div>
+              <div class="panel-actions">
+                <div class="segmented" aria-label="Alternar visão de estoque">
+                  <button class="active" data-stock-view="product" type="button">Por produto</button>
+                  <button data-stock-view="store" type="button">Por loja</button>
+                </div>
+                <button id="generateRestock">Gerar reposição</button>
+              </div>
+            </div>
+            <div class="table-wrap">
+              <table>
+                <thead id="stockTableHead"></thead>
+                <tbody id="stockRows"></tbody>
+              </table>
+            </div>
+          </section>
+
+          <section class="panel demand-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Previsão de demanda</h2>
+                <p class="panel-subtitle">Inclui sazonalidade, tendências, lote econômico e ciclo de vida.</p>
+              </div>
+            </div>
+            <div class="demand-layout">
+              <canvas id="stockCanvas" height="260"></canvas>
+              <div class="demand-insights" id="demandInsights"></div>
+            </div>
+          </section>
+
+          <section class="panel wide">
+            <h2>Painel de controle de estoque</h2>
+            <div class="control-grid" id="restockActions"></div>
+          </section>
+
+          <section class="panel stock-automation-panel">
+            <h2>Configurações de Automação</h2>
+            <div class="automation-settings">
+              <label class="switch-row">
+                <input id="autoRestock" type="checkbox" checked />
+                <span class="switch-ui"></span>
+                <span>Reposição automática ao atingir nível mínimo</span>
+              </label>
+              <label class="switch-row">
+                <input id="emailAlerts" type="checkbox" checked />
+                <span class="switch-ui"></span>
+                <span>Enviar alertas por e-mail</span>
+              </label>
+            </div>
+            <p class="calc-status" id="automationStatus">Reposição automática e alertas por e-mail estão ativos.</p>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="customers">
+        <div class="section-grid customer-grid">
+          <section class="panel wide customer-segment-panel">
+            <div class="panel-header">
+              <h2>Segmentação de clientes</h2>
+              <form class="inline-form" id="segmentForm">
+                <select id="segmentCriterion">
+                  <option value="historico">Histórico de compras</option>
+                  <option value="demografico">Dados demográficos</option>
+                  <option value="valor">Valor do cliente</option>
+                  <option value="risco">Risco de churn</option>
+                </select>
+                <button type="submit">Segmentar</button>
+              </form>
+            </div>
+            <div class="segment-grid" id="segmentCards"></div>
+          </section>
+
+          <section class="panel customer-profile-panel">
+            <h2>Perfil detalhado</h2>
+            <div id="profileDetail" class="profile-detail"></div>
+          </section>
+
+          <section class="panel wide customer-behavior-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Comportamentos e preferências</h2>
+                <p class="panel-subtitle">Evolução de compras, recompra e valor médio do segmento selecionado.</p>
+              </div>
+              <div class="chart-legend">
+                <span><i class="legend-dot blue"></i>Compras</span>
+                <span><i class="legend-dot purple"></i>Preferência digital</span>
+                <span><i class="legend-dot green"></i>Valor médio</span>
+              </div>
+            </div>
+            <div class="customer-chart-layout">
+              <canvas id="customerCanvas" height="280"></canvas>
+              <div class="behavior-summary" id="behaviorSummary"></div>
+            </div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="campaigns">
+        <div class="section-grid">
+          <section class="panel form-panel">
+            <h2>Criar campanha direcionada</h2>
+            <form id="campaignForm">
+              <label>
+                Segmento
+                <select id="campaignSegment">
+                  <option>Clientes em risco</option>
+                  <option>Clientes frequentes</option>
+                  <option>Clientes de alto valor</option>
+                  <option>Novos clientes</option>
+                </select>
+              </label>
+              <label>
+                Canal
+                <select id="campaignChannel">
+                  <option>E-mail + WhatsApp</option>
+                  <option>E-mail</option>
+                  <option>WhatsApp</option>
+                  <option>Redes sociais</option>
+                </select>
+              </label>
+              <label>
+                Objetivo
+                <input id="campaignGoal" value="Reativação de compra" />
+              </label>
+              <label>
+                Mensagem
+                <textarea id="campaignMessage">Oferta personalizada com cupom de retorno e produtos recomendados pelo histórico de compra.</textarea>
+              </label>
+              <button type="submit">Salvar campanha</button>
+            </form>
+          </section>
+
+          <section class="panel wide">
+            <div class="panel-header">
+              <h2>Campanhas planejadas</h2>
+              <button class="ghost" id="simulateCampaign">Simular resultado</button>
+            </div>
+            <div class="campaign-list" id="campaignList"></div>
+          </section>
+        </div>
+      </section>
+
+      <section class="view" id="reports">
+        <div class="section-grid margin-grid">
+          <div class="kpi-grid margin-kpis">
+            <article class="kpi accent-green">
+              <span>Margem média</span>
+              <strong>31,8%</strong>
+              <small>+2,1 p.p. no período</small>
+            </article>
+            <article class="kpi accent-blue">
+              <span>Receita analisada</span>
+              <strong>R$ 199,7 mil</strong>
+              <small>5 produtos principais</small>
+            </article>
+            <article class="kpi accent-teal">
+              <span>Alta margem</span>
+              <strong>2 produtos</strong>
+              <small>Prioridade para campanha</small>
+            </article>
+            <article class="kpi accent-red">
+              <span>Baixo desempenho</span>
+              <strong>1 produto</strong>
+              <small>Revisar preço e custo</small>
+            </article>
+          </div>
+
+          <section class="panel wide margin-chart-panel">
+            <div class="panel-header">
+              <div>
+                <h2>Dashboard de margem de lucro</h2>
+                <p class="panel-subtitle">Compare margem por categoria e identifique oportunidades de preço.</p>
+              </div>
+              <button id="exportReport">Exportar relatório</button>
+            </div>
+            <div class="chart-legend">
+              <span><i class="legend-dot green"></i>Margem por categoria</span>
+              <span><i class="legend-dot amber"></i>Meta mínima</span>
+              <span><i class="legend-dot blue"></i>Receita relacionada</span>
+            </div>
+            <canvas id="marginCanvas" height="240"></canvas>
+          </section>
+
+          <section class="panel margin-diagnostic-panel">
+            <h2>Diagnóstico</h2>
+            <div class="diagnostic" id="marginDiagnostic"></div>
+          </section>
+
+          <section class="panel margin-actions-panel">
+            <h2>Análises comparativas</h2>
+            <div class="margin-actions" id="marginActions"></div>
+          </section>
+
+          <section class="panel wide product-performance-panel">
+            <h2>Desempenho do produto</h2>
+            <div class="table-wrap">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Produto</th>
+                    <th>Categoria</th>
+                    <th>Venda</th>
+                    <th>Margem</th>
+                    <th>Diagnóstico</th>
+                    <th>Ação sugerida</th>
+                  </tr>
+                </thead>
+                <tbody id="productRows"></tbody>
+              </table>
+            </div>
+          </section>
+        </div>
+      </section>
+    </main>
+
+    <div class="toast" id="toast" role="status" aria-live="polite"></div>
+    <script src="app.js"></script>
+  </body>
+</html>
