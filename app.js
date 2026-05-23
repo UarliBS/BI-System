@@ -55,7 +55,6 @@ const roleProfiles = {
 };
 
 const pageTitles = {
-  dashboard: "Dashboard Geral",
   sales: "Análise de Vendas",
   stock: "Estoque e Reposição",
   customers: "Segmentação de Clientes",
