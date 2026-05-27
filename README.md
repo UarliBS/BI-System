@@ -31,9 +31,10 @@ O login e simulado no front-end. A senha padrao preenchida no prototipo e `12345
 |-- README.md
 |-- docs/
 |   |-- organizacao-sistema-bi.md
+|   |-- relatorio-descritivo-projeto.md
 |   |-- PEI.pdf
 |   `-- assets/
-|       `-- diagrama-casos-de-uso.png
+|       `-- Diagrama de Casos de Uso.png
 `-- logs/
 ```
 
@@ -43,8 +44,9 @@ O login e simulado no front-end. A senha padrao preenchida no prototipo e `12345
 - `styles.css`: layout, responsividade e estilos visuais.
 - `app.js`: estado da aplicacao, dados simulados, graficos, filtros, login e interacoes.
 - `docs/organizacao-sistema-bi.md`: documentacao funcional e matriz de rastreabilidade.
+- `docs/relatorio-descritivo-projeto.md`: relatorio descritivo do projeto.
 - `docs/PEI.pdf`: documento de referencia do projeto.
-- `docs/assets/diagrama-casos-de-uso.png`: diagrama de casos de uso.
+- `docs/assets/Diagrama de Casos de Uso.png`: diagrama de casos de uso.
 
 ## Observacoes
 

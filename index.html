@@ -462,24 +462,24 @@
         <div class="section-grid margin-grid">
           <div class="kpi-grid margin-kpis">
             <article class="kpi accent-green">
-              <span>Margem média</span>
-              <strong>31,8%</strong>
-              <small>+2,1% no período</small>
+              <span id="marginKpiPrimaryLabel">Margem média</span>
+              <strong id="marginKpiPrimaryValue">31,8%</strong>
+              <small id="marginKpiPrimaryNote">+2,1% no período</small>
             </article>
             <article class="kpi accent-blue">
-              <span>Receita analisada</span>
-              <strong>R$ 199,7 mil</strong>
-              <small>5 produtos principais</small>
+              <span id="marginKpiRevenueLabel">Receita analisada</span>
+              <strong id="marginKpiRevenueValue">R$ 199,7 mil</strong>
+              <small id="marginKpiRevenueNote">5 produtos principais</small>
             </article>
             <article class="kpi accent-teal">
-              <span>Alta margem</span>
-              <strong>2 produtos</strong>
-              <small>Prioridade para campanha</small>
+              <span id="marginKpiOpportunityLabel">Alta margem</span>
+              <strong id="marginKpiOpportunityValue">2 produtos</strong>
+              <small id="marginKpiOpportunityNote">Prioridade para campanha</small>
             </article>
             <article class="kpi accent-red">
-              <span>Baixo desempenho</span>
-              <strong>1 produto</strong>
-              <small>Revisar preço e custo</small>
+              <span id="marginKpiRiskLabel">Baixo desempenho</span>
+              <strong id="marginKpiRiskValue">1 produto</strong>
+              <small id="marginKpiRiskNote">Revisar preço e custo</small>
             </article>
           </div>
 
@@ -496,6 +496,7 @@
               <span><i class="legend-dot amber"></i>Meta mínima</span>
               <span><i class="legend-dot blue"></i>Receita relacionada</span>
             </div>
+            <div class="margin-category-selector" id="marginCategorySelector" aria-label="Selecionar categoria para análise"></div>
             <canvas id="marginCanvas" height="240"></canvas>
           </section>
 
@@ -518,6 +519,7 @@
                     <th>Produto</th>
                     <th>Categoria</th>
                     <th>Venda</th>
+                    <th>Custo</th>
                     <th>Margem</th>
                     <th>Diagnóstico</th>
                     <th>Ação sugerida</th>
@@ -530,6 +532,22 @@
         </div>
       </section>
     </main>
+
+    <div class="report-preview-overlay" id="reportPreviewOverlay" hidden>
+      <section class="report-preview-modal" role="dialog" aria-modal="true" aria-labelledby="reportPreviewTitle">
+        <div class="report-preview-toolbar">
+          <div>
+            <span>Pré-visualização do PDF</span>
+            <strong id="reportPreviewTitle">Relatório de margem</strong>
+          </div>
+          <div class="report-preview-actions">
+            <button class="ghost" id="closeReportPreview" type="button">Fechar</button>
+            <button id="printReportPreview" type="button">Imprimir / salvar PDF</button>
+          </div>
+        </div>
+        <div class="pdf-preview-page" id="reportPreviewContent"></div>
+      </section>
+    </div>
 
     <div class="toast" id="toast" role="status" aria-live="polite"></div>
     <script src="app.js"></script>

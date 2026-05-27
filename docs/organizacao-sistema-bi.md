@@ -222,6 +222,7 @@ Conteudos:
 - KPIs de margem media, receita analisada, produtos de alta margem e baixo desempenho.
 - Dashboard de margem de lucro.
 - Grafico de margem por categoria, meta minima e receita relacionada.
+- Selecao interativa de categoria por cards ou pelo grafico.
 - Diagnostico de lucratividade.
 - Analises comparativas.
 - Tabela de desempenho do produto.
@@ -230,9 +231,10 @@ Funcionalidades implementadas:
 
 - Calculo de margem ponderada pela receita analisada.
 - Identificacao da categoria mais lucrativa e da categoria em atencao.
-- Sugestoes sobre alteracoes de preco, estrategias de venda e comparacao antes/depois.
-- Tabela com produto, categoria, venda, margem, diagnostico e acao sugerida.
-- Botao de exportacao com feedback simulado.
+- Atualizacao dos cards do dashboard, diagnostico e analises comparativas conforme a categoria selecionada.
+- Sugestoes sobre alteracoes de preco, estrategias de venda e comparacao antes/depois por categoria.
+- Tabela com produto, categoria, venda, custo, margem, diagnostico e acao sugerida.
+- Botao de exportacao com tela de pre-visualizacao do PDF e opcao de imprimir/salvar pelo navegador.
 
 Requisitos atendidos:
 
@@ -254,6 +256,10 @@ Impactos implementados:
 
 - Atualizam KPIs do dashboard.
 - Atualizam dados e tabelas de vendas.
+- Filtram estoque por regiao e loja e recalculam demanda prevista conforme periodo.
+- Ajustam totais de clientes, comportamento e previsoes de campanhas para o recorte selecionado.
+- Recalculam receita, custo, lucro estimado e margem do modulo de relatorios.
+- Atualizam a pre-visualizacao do PDF quando ela estiver aberta.
 - Sincronizam atalhos de periodo no modulo de vendas.
 - Redesenham os graficos em canvas.
 
@@ -267,7 +273,7 @@ O arquivo `app.js` concentra os dados do prototipo em estruturas estaticas:
 | `pageTitles` | Titulos exibidos conforme a tela ativa. |
 | `salesRows` | Vendas por origem, regiao, canal, valor, margem e conversao. |
 | `stockRows` | Produto, loja, estoque atual, demanda prevista e status. |
-| `productRows` | Produto, categoria, venda, margem, diagnostico e acao sugerida. |
+| `productRows` | Produto, categoria, venda, custo, margem, diagnostico e acao sugerida. |
 | `marginCategories` | Margem, receita e meta por categoria. |
 | `segments` | Segmentos de clientes, perfil, canal, produtos e acao recomendada. |
 | `alerts` | Alertas de estoque, margem e relatorio. |

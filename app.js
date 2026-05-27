@@ -8,6 +8,7 @@ const state = {
   metricsCalculated: false,
   stockView: "product",
   selectedSegment: "Clientes frequentes",
+  selectedMarginCategory: "Eletrônicos",
   campaigns: [
     {
       segment: "Clientes em risco",
@@ -79,19 +80,64 @@ const stockRows = [
 ];
 
 const productRows = [
-  ["Smartwatch X", "Eletrônicos", "R$ 84.300", "42%", "Alta margem", "Ampliar campanha"],
-  ["Tênis Run", "Esporte", "R$ 19.000", "18%", "Baixo desempenho", "Revisar preço"],
-  ["Perfume Aura", "Beleza", "R$ 22.000", "35%", "Oportunidade", "Priorizar vitrine"],
-  ["Cafeteira Pro", "Casa", "R$ 41.000", "27%", "Estável", "Monitorar estoque"],
-  ["Fone Pulse", "Eletrônicos", "R$ 33.400", "39%", "Alta margem", "Repor estoque"]
+  ["Smartwatch X", "Eletrônicos", "R$ 84.300", "R$ 48.894", "42%", "Alta margem", "Ampliar campanha"],
+  ["Tênis Run", "Esporte", "R$ 19.000", "R$ 15.580", "18%", "Baixo desempenho", "Revisar preço"],
+  ["Perfume Aura", "Beleza", "R$ 22.000", "R$ 14.300", "35%", "Oportunidade", "Priorizar vitrine"],
+  ["Cafeteira Pro", "Casa", "R$ 41.000", "R$ 29.930", "27%", "Estável", "Monitorar estoque"],
+  ["Fone Pulse", "Eletrônicos", "R$ 33.400", "R$ 20.374", "39%", "Alta margem", "Repor estoque"]
 ];
 
 const marginCategories = [
-  { label: "Eletrônicos", margin: 42, revenue: 117700, target: 30 },
-  { label: "Beleza", margin: 35, revenue: 22000, target: 30 },
-  { label: "Moda", margin: 31, revenue: 28600, target: 30 },
-  { label: "Casa", margin: 27, revenue: 41000, target: 30 },
-  { label: "Esporte", margin: 18, revenue: 19000, target: 30 }
+  {
+    label: "Eletrônicos",
+    margin: 42,
+    revenue: 117700,
+    target: 30,
+    trend: "+6,4% vs. período anterior",
+    opportunity: "Ampliar campanhas premium e priorizar reposição dos itens com maior margem.",
+    risk: "Risco de ruptura em Fone Pulse pode limitar a receita da categoria.",
+    strategy: "Comparar combos com garantia estendida e campanhas para clientes de alto valor."
+  },
+  {
+    label: "Beleza",
+    margin: 35,
+    revenue: 22000,
+    target: 30,
+    trend: "+3,1% vs. período anterior",
+    opportunity: "Priorizar vitrine e ofertas de recompra para itens de uso recorrente.",
+    risk: "Receita menor que categorias lideres; precisa ganhar volume sem sacrificar margem.",
+    strategy: "Testar kits promocionais e campanhas de recompra em 30 dias."
+  },
+  {
+    label: "Moda",
+    margin: 31,
+    revenue: 28600,
+    target: 30,
+    trend: "+0,8% vs. período anterior",
+    opportunity: "Categoria levemente acima da meta, boa para testar descontos progressivos.",
+    risk: "Margem proxima da meta minima; descontos amplos podem reduzir lucratividade.",
+    strategy: "Comparar preço cheio, desconto progressivo e bundles por canal de venda."
+  },
+  {
+    label: "Casa",
+    margin: 27,
+    revenue: 41000,
+    target: 30,
+    trend: "-1,6% vs. período anterior",
+    opportunity: "Revisar custo de compra e destacar produtos com maior giro.",
+    risk: "Categoria abaixo da meta minima, com impacto direto na margem ponderada.",
+    strategy: "Simular reajuste seletivo de preço e renegociação de custo com fornecedor."
+  },
+  {
+    label: "Esporte",
+    margin: 18,
+    revenue: 19000,
+    target: 30,
+    trend: "-4,2% vs. período anterior",
+    opportunity: "Reduzir exposição de produtos de baixa margem e focar itens complementares.",
+    risk: "Baixo desempenho exige revisão de preço, custo e estrategia comercial.",
+    strategy: "Comparar redução de desconto, troca de mix e campanha apenas para produtos rentaveis."
+  }
 ];
 
 const segments = [
@@ -172,6 +218,134 @@ const compactCurrency = (value) => {
   return `R$ ${value} mil`;
 };
 
+const parseCurrencyValue = (value) => Number(String(value).replace(/[^\d,-]/g, "").replace(",", ".")) || 0;
+
+function formatCompactCurrency(value) {
+  if (value >= 1000000) return `R$ ${(value / 1000000).toFixed(2).replace(".", ",")} mi`;
+  if (value >= 1000) return `R$ ${(value / 1000).toFixed(1).replace(".", ",")} mil`;
+  return formatCurrency(value);
+}
+
+const periodFactors = {
+  diario: 0.08,
+  semanal: 0.28,
+  mensal: 1,
+  trimestral: 2.9,
+  anual: 11.4
+};
+
+const regionFactors = {
+  todas: 1,
+  nordeste: 0.42,
+  sudeste: 0.38,
+  sul: 0.2
+};
+
+const storeFactors = {
+  todas: 1,
+  centro: 0.34,
+  norte: 0.26,
+  online: 0.4
+};
+
+const storeRegions = {
+  "Loja Centro": "nordeste",
+  "Loja Norte": "nordeste",
+  Online: "sudeste",
+  "E-commerce": "sudeste",
+  Marketplace: "sul"
+};
+
+function getPeriodFactor() {
+  return periodFactors[state.period] || 1;
+}
+
+function getGlobalFilterFactor() {
+  return getPeriodFactor() * (regionFactors[state.region] || 1) * (storeFactors[state.store] || 1);
+}
+
+function getDemandFactor() {
+  const periodDemand = {
+    diario: 0.18,
+    semanal: 0.52,
+    mensal: 1,
+    trimestral: 1.28,
+    anual: 1.62
+  }[state.period] || 1;
+  return periodDemand * (regionFactors[state.region] || 1) * (storeFactors[state.store] || 1);
+}
+
+function normalizeStoreName(value) {
+  return String(value).toLowerCase();
+}
+
+function storeMatchesFilter(storeName) {
+  if (state.store === "todas") return true;
+  const normalized = normalizeStoreName(storeName);
+  if (state.store === "online") return normalized.includes("online") || normalized.includes("commerce") || normalized.includes("marketplace");
+  return normalized.includes(state.store);
+}
+
+function regionMatchesStore(storeName) {
+  return state.region === "todas" || storeRegions[storeName] === state.region;
+}
+
+function getFilteredStockRows() {
+  return stockRows.filter((row) => regionMatchesStore(row[1]) && storeMatchesFilter(row[1]));
+}
+
+function getFilteredMarginCategory(category) {
+  const factor = getGlobalFilterFactor();
+  const marginAdjustment = {
+    todas: 0,
+    nordeste: 1,
+    sudeste: 2,
+    sul: -2
+  }[state.region] || 0;
+  const storeAdjustment = {
+    todas: 0,
+    centro: -1,
+    norte: -2,
+    online: 2
+  }[state.store] || 0;
+  return {
+    ...category,
+    margin: Math.max(8, Math.round(category.margin + marginAdjustment + storeAdjustment)),
+    revenue: Math.max(1000, Math.round(category.revenue * factor))
+  };
+}
+
+function getFilteredMarginCategories() {
+  return marginCategories.map(getFilteredMarginCategory);
+}
+
+function getFilteredProductRows(categoryLabel = null) {
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
+  return productRows
+    .filter((row) => !categoryLabel || row[1] === categoryLabel)
+    .map((row) => {
+      const sale = parseCurrencyValue(row[2]);
+      const cost = parseCurrencyValue(row[3]);
+      const scaledSale = Math.max(1000, Math.round(sale * factor));
+      const scaledCost = Math.max(700, Math.round(cost * factor));
+      return [
+        row[0],
+        row[1],
+        formatCurrency(scaledSale),
+        formatCurrency(scaledCost),
+        row[4],
+        row[5],
+        row[6]
+      ];
+    });
+}
+
+function getFilteredSegmentTotal(total) {
+  const base = Number(String(total).replace(/\D/g, "")) || 0;
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
+  return new Intl.NumberFormat("pt-BR").format(Math.max(1, Math.round(base * factor)));
+}
+
 function qs(selector) {
   return document.querySelector(selector);
 }
@@ -185,6 +359,15 @@ function showToast(message) {
   toast.textContent = message;
   toast.classList.add("show");
   setTimeout(() => toast.classList.remove("show"), 2600);
+}
+
+function escapeHtml(value) {
+  return String(value)
+    .replaceAll("&", "&amp;")
+    .replaceAll("<", "&lt;")
+    .replaceAll(">", "&gt;")
+    .replaceAll('"', "&quot;")
+    .replaceAll("'", "&#039;");
 }
 
 function getActiveProfile() {
@@ -497,6 +680,12 @@ function drawCustomerBehaviorChart() {
       value: [118, 126, 134, 142, 150, 156]
     }
   }[segment.name];
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
+  const filteredDatasets = {
+    purchases: datasets.purchases.map((value) => Math.max(1, Math.round(value * Math.min(factor, 1.6)))),
+    digital: datasets.digital.map((value) => Math.max(10, Math.min(95, Math.round(value + (state.store === "online" ? 8 : state.store === "todas" ? 0 : -4))))),
+    value: datasets.value.map((value) => Math.max(25, Math.round(value * (state.store === "online" ? 1.12 : 1) * (state.region === "sul" ? 0.94 : 1))))
+  };
   const labels = ["Jan", "Fev", "Mar", "Abr", "Mai", "Jun"];
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
@@ -512,7 +701,7 @@ function drawCustomerBehaviorChart() {
   const pad = { left: 56, right: 34, top: 28, bottom: 44 };
   const chartWidth = Math.max(140, width - pad.left - pad.right);
   const chartHeight = height - pad.top - pad.bottom;
-  const max = Math.max(...datasets.purchases, ...datasets.digital, 100);
+  const max = Math.max(...filteredDatasets.purchases, ...filteredDatasets.digital, 100);
 
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#fbfcfe";
@@ -529,10 +718,10 @@ function drawCustomerBehaviorChart() {
     ctx.stroke();
   }
 
-  const barGap = chartWidth / datasets.purchases.length;
-  datasets.value.forEach((value, index) => {
+  const barGap = chartWidth / filteredDatasets.purchases.length;
+  filteredDatasets.value.forEach((value, index) => {
     const x = pad.left + index * barGap + barGap * 0.28;
-    const barHeight = (value / Math.max(...datasets.value)) * 88;
+    const barHeight = (value / Math.max(...filteredDatasets.value)) * 88;
     ctx.fillStyle = "rgba(22, 163, 74, 0.2)";
     roundRect(ctx, x, pad.top + chartHeight - barHeight, barGap * 0.32, barHeight, 6);
     ctx.fill();
@@ -564,8 +753,8 @@ function drawCustomerBehaviorChart() {
     });
   }
 
-  polyline(datasets.purchases, "#2563eb");
-  polyline(datasets.digital, "#7c3aed");
+  polyline(filteredDatasets.purchases, "#2563eb");
+  polyline(filteredDatasets.digital, "#7c3aed");
 
   labels.forEach((label, index) => {
     const x = pad.left + index * (chartWidth / (labels.length - 1));
@@ -579,6 +768,7 @@ function drawCustomerBehaviorChart() {
 function drawMarginDashboardChart() {
   const canvas = qs("#marginCanvas");
   if (!canvas) return;
+  const selected = getSelectedMarginCategory();
   const rect = canvas.getBoundingClientRect();
   const dpr = window.devicePixelRatio || 1;
   const cssHeight = Number(canvas.dataset.baseHeight || canvas.getAttribute("height") || 240);
@@ -594,12 +784,14 @@ function drawMarginDashboardChart() {
   const chartWidth = Math.max(160, width - pad.left - pad.right);
   const chartHeight = height - pad.top - pad.bottom;
   const maxMargin = 50;
-  const maxRevenue = Math.max(...marginCategories.map((item) => item.revenue));
-  const barGap = chartWidth / marginCategories.length;
+  const categories = getFilteredMarginCategories();
+  const maxRevenue = Math.max(...categories.map((item) => item.revenue));
+  const barGap = chartWidth / categories.length;
 
   ctx.clearRect(0, 0, width, height);
   ctx.fillStyle = "#fbfcfe";
   ctx.fillRect(0, 0, width, height);
+  canvas._marginHitboxes = [];
   ctx.strokeStyle = "#edf1f6";
   ctx.fillStyle = "#667085";
   ctx.font = "12px Inter, sans-serif";
@@ -622,30 +814,256 @@ function drawMarginDashboardChart() {
   ctx.stroke();
   ctx.setLineDash([]);
 
-  marginCategories.forEach((item, index) => {
+  categories.forEach((item, index) => {
     const x = pad.left + index * barGap + barGap * 0.18;
     const marginHeight = (item.margin / maxMargin) * chartHeight;
     const revenueHeight = (item.revenue / maxRevenue) * 54;
     const barWidth = barGap * 0.48;
+    const isSelected = item.label === selected.label;
     const color = item.margin >= 35 ? "#16a34a" : item.margin >= 30 ? "#2563eb" : item.margin >= 25 ? "#d97706" : "#dc2626";
+    const barY = pad.top + chartHeight - marginHeight;
+    canvas._marginHitboxes.push({
+      label: item.label,
+      x,
+      y: barY,
+      width: barWidth,
+      height: marginHeight + 28
+    });
 
     ctx.fillStyle = "rgba(37, 99, 235, 0.14)";
     roundRect(ctx, x + barWidth * 0.58, pad.top + chartHeight - revenueHeight, barWidth * 0.36, revenueHeight, 6);
     ctx.fill();
 
     ctx.fillStyle = color;
-    roundRect(ctx, x, pad.top + chartHeight - marginHeight, barWidth, marginHeight, 7);
+    roundRect(ctx, x, barY, barWidth, marginHeight, 7);
     ctx.fill();
+
+    if (isSelected) {
+      ctx.strokeStyle = "#172033";
+      ctx.lineWidth = 2;
+      roundRect(ctx, x - 5, barY - 5, barWidth + 10, marginHeight + 10, 9);
+      ctx.stroke();
+      ctx.lineWidth = 1;
+      ctx.strokeStyle = "#edf1f6";
+    }
 
     ctx.fillStyle = "#172033";
     ctx.textAlign = "center";
     ctx.font = "700 12px Inter, sans-serif";
-    ctx.fillText(`${item.margin}%`, x + barWidth / 2, pad.top + chartHeight - marginHeight - 8);
+    ctx.fillText(`${item.margin}%`, x + barWidth / 2, barY - 8);
     ctx.font = "12px Inter, sans-serif";
-    ctx.fillStyle = "#667085";
+    ctx.fillStyle = isSelected ? "#172033" : "#667085";
     ctx.fillText(item.label.slice(0, 7), x + barWidth / 2, height - 18);
   });
   ctx.textAlign = "left";
+}
+
+function getSelectedMarginCategory() {
+  return getFilteredMarginCategories().find((item) => item.label === state.selectedMarginCategory) || getFilteredMarginCategories()[0];
+}
+
+function getProductsByCategory(categoryLabel) {
+  return getFilteredProductRows(categoryLabel);
+}
+
+function getMarginCategorySummary(category) {
+  const products = getProductsByCategory(category.label);
+  const productRevenue = products.reduce((sum, row) => sum + parseCurrencyValue(row[2]), 0);
+  const productCost = products.reduce((sum, row) => sum + parseCurrencyValue(row[3]), 0);
+  const revenue = productRevenue || category.revenue;
+  const cost = productCost || Math.round(category.revenue * (1 - category.margin / 100));
+  const profit = Math.max(0, revenue - cost);
+  const targetGap = category.margin - category.target;
+  const productCount = products.length;
+  const bestProduct = products.reduce((best, row) => {
+    if (!best) return row;
+    return parseCurrencyValue(row[2]) > parseCurrencyValue(best[2]) ? row : best;
+  }, null);
+  const weakProducts = products.filter((row) => row[5] === "Baixo desempenho").length;
+  const status = category.margin >= 35 ? "Alta margem" : category.margin >= category.target ? "Dentro da meta" : "Abaixo da meta";
+
+  return {
+    category,
+    products,
+    revenue,
+    cost,
+    profit,
+    targetGap,
+    productCount,
+    bestProduct,
+    weakProducts,
+    status
+  };
+}
+
+function renderMarginCategorySelector() {
+  const container = qs("#marginCategorySelector");
+  if (!container) return;
+  container.innerHTML = getFilteredMarginCategories()
+    .map((category) => {
+      const isActive = category.label === state.selectedMarginCategory;
+      const status = category.margin >= 35 ? "Alta" : category.margin >= category.target ? "Meta" : "Atenção";
+      return `
+        <button class="margin-category-card${isActive ? " active" : ""}" data-margin-category="${category.label}" type="button" aria-pressed="${isActive}">
+          <span>${category.label}</span>
+          <strong>${category.margin}%</strong>
+          <small>${status} · ${formatCompactCurrency(category.revenue)}</small>
+        </button>
+      `;
+    })
+    .join("");
+}
+
+function selectMarginCategory(categoryLabel) {
+  if (!marginCategories.some((category) => category.label === categoryLabel)) return;
+  state.selectedMarginCategory = categoryLabel;
+  renderMarginDashboard();
+  drawMarginDashboardChart();
+  showToast(`Categoria selecionada: ${categoryLabel}.`);
+}
+
+function getSelectedFilterLabels() {
+  const period = qs("#periodFilter")?.selectedOptions[0]?.textContent || state.period;
+  const region = qs("#regionFilter")?.selectedOptions[0]?.textContent || state.region;
+  const store = qs("#storeFilter")?.selectedOptions[0]?.textContent || state.store;
+  return { period, region, store };
+}
+
+function buildReportPreviewHtml() {
+  const summary = getMarginCategorySummary(getSelectedMarginCategory());
+  const filters = getSelectedFilterLabels();
+  const targetLabel = summary.targetGap >= 0 ? `${summary.targetGap} p.p. acima da meta` : `${Math.abs(summary.targetGap)} p.p. abaixo da meta`;
+  const profitRate = ((summary.profit / Math.max(summary.revenue, 1)) * 100).toFixed(1).replace(".", ",");
+  const generatedAt = new Date().toLocaleString("pt-BR", {
+    dateStyle: "short",
+    timeStyle: "short"
+  });
+  const rows = summary.products.length ? summary.products : getFilteredProductRows();
+  const tableNote = summary.products.length
+    ? `Produtos detalhados da categoria ${summary.category.label}.`
+    : `A categoria ${summary.category.label} não possui produto detalhado na tabela; abaixo está a base completa exportada.`;
+
+  const productRowsHtml = rows
+    .map((row) => `
+      <tr>
+        <td>${escapeHtml(row[0])}</td>
+        <td>${escapeHtml(row[1])}</td>
+        <td>${escapeHtml(row[2])}</td>
+        <td>${escapeHtml(row[3])}</td>
+        <td>${escapeHtml(row[4])}</td>
+        <td>${escapeHtml(row[5])}</td>
+        <td>${escapeHtml(row[6])}</td>
+      </tr>
+    `)
+    .join("");
+
+  return `
+    <header class="pdf-header">
+      <div>
+        <span>BI Retail</span>
+        <h2>Relatório de Margem de Lucro</h2>
+        <p>Pré-visualização do PDF exportado com os dados atuais do dashboard.</p>
+      </div>
+      <div class="pdf-meta">
+        <strong>${escapeHtml(summary.category.label)}</strong>
+        <span>Gerado em ${escapeHtml(generatedAt)}</span>
+      </div>
+    </header>
+
+    <section class="pdf-filter-row">
+      <article><span>Período</span><strong>${escapeHtml(filters.period)}</strong></article>
+      <article><span>Região</span><strong>${escapeHtml(filters.region)}</strong></article>
+      <article><span>Loja</span><strong>${escapeHtml(filters.store)}</strong></article>
+      <article><span>Status</span><strong>${escapeHtml(summary.status)}</strong></article>
+    </section>
+
+    <section class="pdf-kpi-row">
+      <article>
+        <span>Margem</span>
+        <strong>${summary.category.margin}%</strong>
+        <small>${escapeHtml(targetLabel)}</small>
+      </article>
+      <article>
+        <span>Receita</span>
+        <strong>${escapeHtml(formatCompactCurrency(summary.revenue))}</strong>
+        <small>Categoria selecionada</small>
+      </article>
+      <article>
+        <span>Custo</span>
+        <strong>${escapeHtml(formatCompactCurrency(summary.cost))}</strong>
+        <small>Custo estimado</small>
+      </article>
+      <article>
+        <span>Lucro estimado</span>
+        <strong>${escapeHtml(formatCompactCurrency(summary.profit))}</strong>
+        <small>${profitRate}% da receita</small>
+      </article>
+    </section>
+
+    <section class="pdf-section">
+      <h3>Diagnóstico executivo</h3>
+      <p>${escapeHtml(summary.status)} com margem de ${summary.category.margin}% e ${escapeHtml(targetLabel)}. ${escapeHtml(summary.category.opportunity)}</p>
+      <p>${escapeHtml(summary.category.risk)}</p>
+    </section>
+
+    <section class="pdf-section two-columns">
+      <article>
+        <h3>Análise comparativa</h3>
+        <p>${escapeHtml(summary.category.strategy)}</p>
+      </article>
+      <article>
+        <h3>Antes e depois</h3>
+        <p>Simular margem atual de ${summary.category.margin}% contra meta de ${summary.category.target}% para medir impacto em preço, custo, lucro e volume vendido.</p>
+      </article>
+    </section>
+
+    <section class="pdf-section">
+      <h3>Produtos exportados</h3>
+      <p>${escapeHtml(tableNote)}</p>
+      <table class="pdf-table">
+        <thead>
+          <tr>
+            <th>Produto</th>
+            <th>Categoria</th>
+            <th>Venda</th>
+            <th>Custo</th>
+            <th>Margem</th>
+            <th>Diagnóstico</th>
+            <th>Ação sugerida</th>
+          </tr>
+        </thead>
+        <tbody>${productRowsHtml}</tbody>
+      </table>
+    </section>
+  `;
+}
+
+function openReportPreview() {
+  const overlay = qs("#reportPreviewOverlay");
+  qs("#reportPreviewContent").innerHTML = buildReportPreviewHtml();
+  overlay.hidden = false;
+  document.body.classList.add("preview-open");
+  qs("#closeReportPreview").focus();
+}
+
+function closeReportPreview() {
+  qs("#reportPreviewOverlay").hidden = true;
+  document.body.classList.remove("preview-open");
+  qs("#exportReport").focus();
+}
+
+function refreshFilteredViews() {
+  updateKpis();
+  renderSummary();
+  renderSales();
+  renderStock();
+  renderSegments();
+  renderCampaigns();
+  renderProducts();
+  drawAllCharts();
+  if (!qs("#reportPreviewOverlay").hidden) {
+    qs("#reportPreviewContent").innerHTML = buildReportPreviewHtml();
+  }
 }
 
 function roundRect(ctx, x, y, width, height, radius) {
@@ -669,7 +1087,8 @@ function drawAllCharts() {
     color: state.chartMode === "sales" ? "#2563eb" : "#16a34a"
   });
   drawSalesPeriodChart();
-  drawChart("stockCanvas", [28, 34, 42, 55, 68, 81, 96], {
+  const stockTrend = [28, 34, 42, 55, 68, 81, 96].map((value) => Math.max(1, Math.round(value * getDemandFactor())));
+  drawChart("stockCanvas", stockTrend, {
     type: "bar",
     labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Sem 6", "Sem 7"],
     colors: ["#0f766e", "#16a34a", "#d97706", "#dc2626"]
@@ -686,11 +1105,17 @@ function renderAlerts() {
 }
 
 function renderSummary() {
+  const factor = getGlobalFilterFactor();
+  const filteredStock = getFilteredStockRows();
+  const criticalCount = filteredStock.filter((row) => row[4] !== "Normal").length;
+  const filteredCategories = getFilteredMarginCategories();
+  const totalRevenue = filteredCategories.reduce((sum, item) => sum + item.revenue, 0);
+  const weightedMargin = filteredCategories.reduce((sum, item) => sum + item.margin * item.revenue, 0) / Math.max(totalRevenue, 1);
   const rows = [
-    ["Vendas", "Receita mensal", "R$ 1,28 mi", "ok", "Acima da meta"],
-    ["Estoque", "Produtos críticos", "23 itens", "bad", "Ação imediata"],
-    ["Clientes", "Segmentos ativos", "4 segmentos", "ok", "Campanhas prontas"],
-    ["Margem", "Margem média", "31,8%", "warn", "Monitorar esporte"]
+    ["Vendas", "Receita filtrada", formatCompactCurrency(Math.round(1280000 * factor)), "ok", "Recorte aplicado"],
+    ["Estoque", "Produtos em alerta", `${criticalCount} itens`, criticalCount ? "bad" : "ok", criticalCount ? "Ação imediata" : "Sem risco crítico"],
+    ["Clientes", "Segmentos ativos", "4 segmentos", "ok", "Filtro aplicado"],
+    ["Margem", "Margem média", `${weightedMargin.toFixed(1).replace(".", ",")}%`, weightedMargin >= 30 ? "ok" : "warn", "Recorte filtrado"]
   ];
   qs("#summaryRows").innerHTML = rows
     .map((row) => `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td><span class="status ${row[3]}">${row[4]}</span></td></tr>`)
@@ -750,12 +1175,17 @@ function renderPeriodDetails() {
 
 function renderSales() {
   const search = qs("#salesSearch").value.toLowerCase();
-  const filtered = salesRows.filter((row) => {
-    const regionMatches = state.region === "todas" || row[1].toLowerCase() === state.region;
-    const storeMatches = state.store === "todas" || row[0].toLowerCase().includes(state.store);
-    const searchMatches = row.join(" ").toLowerCase().includes(search);
-    return regionMatches && storeMatches && searchMatches;
-  });
+  const filtered = salesRows
+    .filter((row) => {
+      const regionMatches = state.region === "todas" || row[1].toLowerCase() === state.region;
+      const storeMatches = state.store === "todas" || row[0].toLowerCase().includes(state.store) || (state.store === "online" && row[2].toLowerCase() !== "loja física");
+      const searchMatches = row.join(" ").toLowerCase().includes(search);
+      return regionMatches && storeMatches && searchMatches;
+    })
+    .map((row) => {
+      const scaledValue = Math.max(0, Math.round(row[3] * getPeriodFactor()));
+      return [row[0], row[1], row[2], scaledValue, row[4], row[5]];
+    });
   qs("#salesRows").innerHTML = filtered
     .map((row) => `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${formatCurrency(row[3])}</td><td>${row[4]}</td><td>${row[5]}</td></tr>`)
     .join("");
@@ -842,21 +1272,25 @@ function renderOriginSummary(rows) {
 }
 
 function renderStock() {
+  const filteredRows = getFilteredStockRows();
   if (state.stockView === "store") {
-    renderStockByStore();
+    renderStockByStore(filteredRows);
   } else {
-    renderStockByProduct();
+    renderStockByProduct(filteredRows);
   }
 
-  const critical = stockRows.filter((row) => row[4] !== "Normal");
+  const critical = filteredRows.filter((row) => row[4] !== "Normal");
   const orders = [...critical.map((row) => ({ product: row[0], store: row[1], amount: Math.max(row[3] - row[2], 40) })), ...state.restockOrders];
   qs("#restockActions").innerHTML = orders
-    .map((order) => `<article class="action-card"><strong>${order.product}</strong><span>${order.store}</span><p>Reposição sugerida: ${order.amount} unidades</p></article>`)
+    .map((order) => `<article class="action-card"><strong>${order.product}</strong><span>${order.store}</span><p>Reposição sugerida: ${Math.max(1, Math.round(order.amount * getDemandFactor()))} unidades</p></article>`)
     .join("");
-  renderDemandInsights();
+  if (!orders.length) {
+    qs("#restockActions").innerHTML = `<article class="action-card"><strong>Sem reposição urgente</strong><span>Filtros atuais</span><p>Nenhum item crítico encontrado para período, região e loja selecionados.</p></article>`;
+  }
+  renderDemandInsights(filteredRows);
 }
 
-function renderStockByProduct() {
+function renderStockByProduct(rows = getFilteredStockRows()) {
   qs("#stockTableTitle").textContent = "Estoque atual por produto";
   qs("#stockTableHead").innerHTML = `
     <tr>
@@ -867,21 +1301,21 @@ function renderStockByProduct() {
       <th>Status</th>
     </tr>
   `;
-  qs("#stockRows").innerHTML = stockRows
+  qs("#stockRows").innerHTML = rows.length ? rows
     .map((row) => {
       const statusClass = row[4] === "Crítico" ? "bad" : row[4] === "Atenção" ? "warn" : "ok";
-      return `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]} un</td><td>${row[3]} un</td><td><span class="status ${statusClass}">${row[4]}</span></td></tr>`;
+      return `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]} un</td><td>${Math.max(1, Math.round(row[3] * getDemandFactor()))} un</td><td><span class="status ${statusClass}">${row[4]}</span></td></tr>`;
     })
-    .join("");
+    .join("") : `<tr><td colspan="5">Nenhum produto encontrado para os filtros atuais.</td></tr>`;
 }
 
-function renderStockByStore() {
-  const stores = stockRows.reduce((acc, row) => {
+function renderStockByStore(rows = getFilteredStockRows()) {
+  const stores = rows.reduce((acc, row) => {
     const key = row[1];
     if (!acc[key]) acc[key] = { store: key, products: 0, stock: 0, demand: 0, critical: 0 };
     acc[key].products += 1;
     acc[key].stock += row[2];
-    acc[key].demand += row[3];
+    acc[key].demand += Math.max(1, Math.round(row[3] * getDemandFactor()));
     if (row[4] !== "Normal") acc[key].critical += 1;
     return acc;
   }, {});
@@ -896,22 +1330,25 @@ function renderStockByStore() {
       <th>Risco</th>
     </tr>
   `;
-  qs("#stockRows").innerHTML = Object.values(stores)
+  const storeRows = Object.values(stores);
+  qs("#stockRows").innerHTML = storeRows.length ? storeRows
     .map((row) => {
       const statusClass = row.critical > 1 ? "bad" : row.critical === 1 ? "warn" : "ok";
       const status = row.critical ? `${row.critical} alerta(s)` : "Normal";
       return `<tr><td>${row.store}</td><td>${row.products}</td><td>${row.stock} un</td><td>${row.demand} un</td><td><span class="status ${statusClass}">${status}</span></td></tr>`;
     })
-    .join("");
+    .join("") : `<tr><td colspan="5">Nenhuma loja encontrada para os filtros atuais.</td></tr>`;
 }
 
-function renderDemandInsights() {
-  const criticalCount = stockRows.filter((row) => row[4] === "Crítico").length;
-  const attentionCount = stockRows.filter((row) => row[4] === "Atenção").length;
+function renderDemandInsights(rows = getFilteredStockRows()) {
+  const criticalCount = rows.filter((row) => row[4] === "Crítico").length;
+  const attentionCount = rows.filter((row) => row[4] === "Atenção").length;
+  const demandGrowth = Math.max(1, Math.round(14 * getDemandFactor()));
+  const restockAmount = Math.max(40, Math.round(360 * getDemandFactor()));
   qs("#demandInsights").innerHTML = `
     <article>
       <strong>Sazonalidade</strong>
-      <span>Demanda +14% nas próximas semanas, com pico estimado em Sem 7.</span>
+      <span>Demanda +${demandGrowth}% para o recorte atual, com pico estimado conforme o período selecionado.</span>
     </article>
     <article>
       <strong>Tendências</strong>
@@ -919,7 +1356,7 @@ function renderDemandInsights() {
     </article>
     <article>
       <strong>Lote econômico de compra</strong>
-      <span>Compra sugerida: 360 unidades para reduzir ruptura e custo de pedido.</span>
+      <span>Compra sugerida: ${restockAmount} unidades para reduzir ruptura e custo de pedido.</span>
     </article>
     <article>
       <strong>Ciclo de vida</strong>
@@ -948,7 +1385,7 @@ function renderSegments() {
     .map((segment) => `
       <button class="segment-card" data-segment="${segment.name}">
         <strong>${segment.name}</strong>
-        <span class="segment-total">${segment.total}</span>
+        <span class="segment-total">${getFilteredSegmentTotal(segment.total)}</span>
         <p>${segment.note}</p>
         <span>${segment.action}</span>
       </button>
@@ -961,7 +1398,7 @@ function renderProfile() {
   const segment = segments.find((item) => item.name === state.selectedSegment) || segments[0];
   qs("#profileDetail").innerHTML = `
     <div class="profile-hero">
-      <strong>${segment.total}</strong>
+      <strong>${getFilteredSegmentTotal(segment.total)}</strong>
       <span>${segment.name}</span>
     </div>
     <div class="profile-info-grid">
@@ -988,99 +1425,147 @@ function renderProfile() {
 }
 
 function renderBehaviorSummary(segment) {
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
   const behavior = {
     "Clientes frequentes": ["3,4 compras/mês", "72% preferência digital", "R$ 186 valor médio"],
     "Clientes de alto valor": ["1,8 compras/mês", "64% preferência digital", "R$ 420 valor médio"],
     "Clientes em risco": ["0,4 compras/mês", "58% preferência digital", "R$ 138 valor médio"],
     "Novos clientes": ["1,1 compras/mês", "69% preferência digital", "R$ 156 valor médio"]
   }[segment.name];
+  const purchaseValue = Number(behavior[0].replace(",", ".").match(/[\d.]+/)?.[0] || 0);
+  const digitalValue = Number(behavior[1].match(/\d+/)?.[0] || 0);
+  const ticketValue = Number(behavior[2].replace(/\D/g, "")) || 0;
+  const adjustedPurchases = Math.max(0.1, purchaseValue * Math.min(factor, 1.6)).toFixed(1).replace(".", ",");
+  const adjustedDigital = Math.max(10, Math.min(95, Math.round(digitalValue + (state.store === "online" ? 8 : state.store === "todas" ? 0 : -4))));
+  const adjustedTicket = Math.max(25, Math.round(ticketValue * (state.store === "online" ? 1.12 : 1) * (state.region === "sul" ? 0.94 : 1)));
 
   qs("#behaviorSummary").innerHTML = `
     <article>
-      <strong>${behavior[0]}</strong>
-      <span>Frequência média de compra do segmento.</span>
+      <strong>${adjustedPurchases} compras/mês</strong>
+      <span>Frequência média de compra do segmento no recorte filtrado.</span>
     </article>
     <article>
-      <strong>${behavior[1]}</strong>
-      <span>Participação de canais digitais nas interações.</span>
+      <strong>${adjustedDigital}% preferência digital</strong>
+      <span>Participação de canais digitais conforme região e loja selecionadas.</span>
     </article>
     <article>
-      <strong>${behavior[2]}</strong>
-      <span>Valor médio por pedido considerado nas campanhas.</span>
+      <strong>R$ ${adjustedTicket} valor médio</strong>
+      <span>Valor médio por pedido considerado nas campanhas filtradas.</span>
     </article>
   `;
 }
 
 function renderCampaigns() {
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
   qs("#campaignList").innerHTML = state.campaigns
-    .map((campaign) => `
-      <article class="campaign-card">
-        <div>
-          <strong>${campaign.segment}</strong>
-          <span>${campaign.goal} via ${campaign.channel}</span>
-        </div>
-        <div>
-          <strong>${campaign.conversion}</strong>
-          <span>${campaign.revenue}</span>
-        </div>
-      </article>
-    `)
+    .map((campaign) => {
+      const conversion = campaign.conversion === "Previsto" ? "Previsto" : `${(Number(campaign.conversion.replace("%", "").replace(",", ".")) * Math.min(factor, 1.45)).toFixed(1).replace(".", ",")}%`;
+      const revenueNumber = parseCurrencyValue(campaign.revenue);
+      const revenue = revenueNumber ? formatCompactCurrency(Math.round(revenueNumber * 1000 * factor)) : campaign.revenue;
+      return `
+        <article class="campaign-card">
+          <div>
+            <strong>${campaign.segment}</strong>
+            <span>${campaign.goal} via ${campaign.channel}</span>
+            <small>Filtro: ${getSelectedFilterLabels().period}, ${getSelectedFilterLabels().region}, ${getSelectedFilterLabels().store}</small>
+          </div>
+          <div>
+            <strong>${conversion}</strong>
+            <span>${revenue}</span>
+          </div>
+        </article>
+      `;
+    })
     .join("");
 }
 
 function renderProducts() {
-  qs("#productRows").innerHTML = productRows
+  qs("#productRows").innerHTML = getFilteredProductRows()
     .map((row) => {
-      const status = row[4] === "Baixo desempenho" ? "bad" : row[4] === "Estável" ? "warn" : "ok";
-      return `<tr><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td><span class="status ${status}">${row[4]}</span></td><td>${row[5]}</td></tr>`;
+      const status = row[5] === "Baixo desempenho" ? "bad" : row[5] === "Estável" ? "warn" : "ok";
+      const selected = row[1] === state.selectedMarginCategory ? " class=\"selected-category-row\"" : "";
+      return `<tr${selected}><td>${row[0]}</td><td>${row[1]}</td><td>${row[2]}</td><td>${row[3]}</td><td>${row[4]}</td><td><span class="status ${status}">${row[5]}</span></td><td>${row[6]}</td></tr>`;
     })
     .join("");
   renderMarginDashboard();
 }
 
 function renderMarginDashboard() {
-  const best = marginCategories.reduce((top, item) => (item.margin > top.margin ? item : top), marginCategories[0]);
-  const worst = marginCategories.reduce((low, item) => (item.margin < low.margin ? item : low), marginCategories[0]);
-  const totalRevenue = marginCategories.reduce((sum, item) => sum + item.revenue, 0);
-  const weightedMargin = marginCategories.reduce((sum, item) => sum + item.margin * item.revenue, 0) / totalRevenue;
+  renderMarginCategorySelector();
+  const categories = getFilteredMarginCategories();
+  const best = categories.reduce((top, item) => (item.margin > top.margin ? item : top), categories[0]);
+  const worst = categories.reduce((low, item) => (item.margin < low.margin ? item : low), categories[0]);
+  const totalRevenue = categories.reduce((sum, item) => sum + item.revenue, 0);
+  const weightedMargin = categories.reduce((sum, item) => sum + item.margin * item.revenue, 0) / totalRevenue;
+  const summary = getMarginCategorySummary(getSelectedMarginCategory());
+  const targetLabel = summary.targetGap >= 0 ? `${summary.targetGap} p.p. acima da meta` : `${Math.abs(summary.targetGap)} p.p. abaixo da meta`;
+  const profitRate = ((summary.profit / Math.max(summary.revenue, 1)) * 100).toFixed(1).replace(".", ",");
+  const productNote = summary.products.length
+    ? `${summary.productCount} ${summary.productCount === 1 ? "produto analisado" : "produtos analisados"}`
+    : "Categoria agregada sem produto detalhado";
+
+  qs("#marginKpiPrimaryLabel").textContent = `Margem - ${summary.category.label}`;
+  qs("#marginKpiPrimaryValue").textContent = `${summary.category.margin}%`;
+  qs("#marginKpiPrimaryNote").textContent = `${targetLabel}; ${summary.category.trend}`;
+  qs("#marginKpiRevenueLabel").textContent = "Receita da categoria";
+  qs("#marginKpiRevenueValue").textContent = formatCompactCurrency(summary.revenue);
+  qs("#marginKpiRevenueNote").textContent = productNote;
+  qs("#marginKpiOpportunityLabel").textContent = "Lucro estimado";
+  qs("#marginKpiOpportunityValue").textContent = formatCompactCurrency(summary.profit);
+  qs("#marginKpiOpportunityNote").textContent = `${profitRate}% sobre a receita`;
+  qs("#marginKpiRiskLabel").textContent = summary.targetGap >= 0 ? "Status da meta" : "Risco de margem";
+  qs("#marginKpiRiskValue").textContent = summary.status;
+  qs("#marginKpiRiskNote").textContent = summary.targetGap >= 0 ? "Manter estratégia e monitorar custo" : "Revisar preço, custo e mix";
 
   qs("#marginDiagnostic").innerHTML = `
     <article>
+      <strong>${summary.category.label}</strong>
+      <span>${summary.status}: margem de ${summary.category.margin}% com ${targetLabel}.</span>
+    </article>
+    <article>
+      <strong>${formatCompactCurrency(summary.cost)}</strong>
+      <span>Custo estimado da categoria, contra ${formatCompactCurrency(summary.revenue)} em receita.</span>
+    </article>
+    <article>
+      <strong>${summary.bestProduct ? summary.bestProduct[0] : "Mix agregado"}</strong>
+      <span>${summary.bestProduct ? `Produto de maior receita da categoria, com venda de ${summary.bestProduct[2]}.` : "Categoria sem produto detalhado na tabela; analise baseada no agregado do dashboard."}</span>
+    </article>
+    <article>
       <strong>${weightedMargin.toFixed(1).replace(".", ",")}%</strong>
-      <span>Margem ponderada pela receita analisada.</span>
-    </article>
-    <article>
-      <strong>${best.label}</strong>
-      <span>Categoria mais lucrativa, com ${best.margin}% de margem.</span>
-    </article>
-    <article>
-      <strong>${worst.label}</strong>
-      <span>Categoria em atenção, ${worst.target - worst.margin} p.p. abaixo da meta mínima.</span>
+      <span>Margem ponderada geral. Melhor categoria: ${best.label}; maior atenção: ${worst.label}.</span>
     </article>
   `;
 
   qs("#marginActions").innerHTML = `
     <article>
-      <strong>Alterações de preço</strong>
-      <span>Simular aumento de 4% em Eletrônicos e redução seletiva em Esporte para medir impacto na margem.</span>
+      <strong>Leitura da categoria</strong>
+      <span>${summary.category.opportunity}</span>
     </article>
     <article>
-      <strong>Estratégias de venda</strong>
-      <span>Comparar campanhas premium, combos e descontos progressivos por categoria e canal de venda.</span>
+      <strong>Risco e custo</strong>
+      <span>${summary.category.risk}</span>
+    </article>
+    <article>
+      <strong>Análise comparativa</strong>
+      <span>${summary.category.strategy}</span>
     </article>
     <article>
       <strong>Antes e depois</strong>
-      <span>Avaliar margem antes/depois de mudanças de preço para validar se a estratégia aumenta a lucratividade.</span>
+      <span>Simular cenário com margem atual de ${summary.category.margin}% versus meta de ${summary.category.target}% para medir impacto em lucro, preço e volume.</span>
     </article>
   `;
 }
 
 function updateKpis() {
-  const factor = { diario: 0.08, semanal: 0.28, mensal: 1, trimestral: 2.9, anual: 11.4 }[state.period] || 1;
-  qs("#kpiSales").textContent = factor >= 1 ? `R$ ${(1.28 * factor).toFixed(2).replace(".", ",")} mi` : `R$ ${Math.round(1280 * factor)} mil`;
-  qs("#kpiMargin").textContent = state.region === "sul" ? "29,4%" : "31,8%";
-  qs("#kpiTicket").textContent = state.store === "online" ? "R$ 204" : "R$ 184";
-  qs("#kpiCritical").textContent = state.store === "online" ? "8 itens" : "23 itens";
+  const factor = getGlobalFilterFactor();
+  const filteredCategories = getFilteredMarginCategories();
+  const totalRevenue = filteredCategories.reduce((sum, item) => sum + item.revenue, 0);
+  const weightedMargin = filteredCategories.reduce((sum, item) => sum + item.margin * item.revenue, 0) / Math.max(totalRevenue, 1);
+  const criticalCount = getFilteredStockRows().filter((row) => row[4] !== "Normal").length;
+  qs("#kpiSales").textContent = formatCompactCurrency(Math.round(1280000 * factor));
+  qs("#kpiMargin").textContent = `${weightedMargin.toFixed(1).replace(".", ",")}%`;
+  qs("#kpiTicket").textContent = `R$ ${Math.round((state.store === "online" ? 204 : 184) * (state.region === "sul" ? 0.96 : 1))}`;
+  qs("#kpiCritical").textContent = `${criticalCount} itens`;
 }
 
 function bindEvents() {
@@ -1100,10 +1585,8 @@ function bindEvents() {
     state.region = qs("#regionFilter").value;
     state.store = qs("#storeFilter").value;
     qsa("[data-period]").forEach((button) => button.classList.toggle("active", button.dataset.period === state.period));
-    updateKpis();
-    renderSales();
-    drawAllCharts();
-    showToast("Filtros aplicados ao protótipo.");
+    refreshFilteredViews();
+    showToast("Filtros aplicados em todos os módulos disponíveis para o perfil.");
   });
 
   qsa("[data-chart-mode]").forEach((button) => {
@@ -1119,9 +1602,7 @@ function bindEvents() {
       state.period = button.dataset.period;
       qs("#periodFilter").value = state.period;
       qsa("[data-period]").forEach((item) => item.classList.toggle("active", item === button));
-      updateKpis();
-      renderPeriodDetails();
-      drawAllCharts();
+      refreshFilteredViews();
     });
   });
 
@@ -1195,7 +1676,36 @@ function bindEvents() {
     showToast("Resultado da campanha simulado.");
   });
 
-  qs("#exportReport").addEventListener("click", () => showToast("Relatório preparado para exportação."));
+  qs("#exportReport").addEventListener("click", openReportPreview);
+  qs("#closeReportPreview").addEventListener("click", closeReportPreview);
+  qs("#printReportPreview").addEventListener("click", () => window.print());
+  qs("#reportPreviewOverlay").addEventListener("click", (event) => {
+    if (event.target === event.currentTarget) closeReportPreview();
+  });
+  window.addEventListener("keydown", (event) => {
+    if (event.key === "Escape" && !qs("#reportPreviewOverlay").hidden) closeReportPreview();
+  });
+
+  qs("#marginCategorySelector").addEventListener("click", (event) => {
+    const card = event.target.closest("[data-margin-category]");
+    if (!card) return;
+    selectMarginCategory(card.dataset.marginCategory);
+    renderProducts();
+  });
+
+  qs("#marginCanvas").addEventListener("click", (event) => {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const hitbox = (canvas._marginHitboxes || []).find((box) =>
+      x >= box.x && x <= box.x + box.width && y >= box.y - 18 && y <= box.y + box.height
+    );
+    if (!hitbox) return;
+    selectMarginCategory(hitbox.label);
+    renderProducts();
+  });
+
   window.addEventListener("resize", drawAllCharts);
 }
 
