@@ -137,8 +137,9 @@ Funcionalidades implementadas:
 - Visualizacao de produto, loja, estoque, demanda prevista e status.
 - Visao consolidada por loja com total de produtos, estoque, demanda e risco.
 - Geracao simulada de pedido de reposicao.
-- Sugestao de reposicao baseada em itens criticos ou em atencao.
-- Insights de sazonalidade, tendencias, lote economico de compra e ciclo de vida.
+- Grafico interativo de previsao de demanda por semana.
+- Sugestao de reposicao baseada em itens criticos ou em atencao e na semana selecionada.
+- Insights de sazonalidade, tendencias, lote economico de compra e ciclo de vida atualizados pela barra selecionada.
 - Toggles para reposicao automatica e envio de alertas por e-mail.
 
 Requisitos atendidos:
@@ -176,7 +177,7 @@ Criterios disponiveis:
 Funcionalidades implementadas:
 
 - Segmentacao por criterio.
-- Selecao direta de segmento via card.
+- Selecao direta de segmento via card comparativo com total, canal, frequencia, preferencia digital, ticket medio e acao recomendada.
 - Exibicao de comportamento, produtos preferidos, canal indicado e acao recomendada.
 - Resumo de frequencia media, preferencia digital e valor medio.
 

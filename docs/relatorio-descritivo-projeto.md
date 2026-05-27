@@ -83,7 +83,7 @@ O sistema tambem apresenta:
 - Visao por produto.
 - Visao consolidada por loja.
 - Geracao simulada de pedido de reposicao.
-- Previsao de demanda.
+- Previsao de demanda interativa por semana.
 - Indicadores de sazonalidade, tendencias, lote economico e ciclo de vida.
 - Configuracoes simuladas de reposicao automatica e alertas por e-mail.
 
@@ -99,6 +99,8 @@ Segmentos implementados:
 - Novos clientes.
 
 Cada segmento possui perfil detalhado, produtos preferidos, canal indicado e acao recomendada.
+
+Para facilitar a leitura, cada segmento e apresentado em card comparativo com total de clientes, canal recomendado, frequencia media, preferencia digital, ticket medio e acao sugerida. O segmento ativo fica destacado e atualiza o perfil detalhado e o grafico de comportamento.
 
 ### 7.5 Campanhas de Marketing
 

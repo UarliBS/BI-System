@@ -7,6 +7,7 @@ const state = {
   filteredSalesRows: [],
   metricsCalculated: false,
   stockView: "product",
+  selectedDemandWeek: 6,
   selectedSegment: "Clientes frequentes",
   selectedMarginCategory: "Eletrônicos",
   campaigns: [
@@ -466,15 +467,35 @@ function drawChart(canvasId, values, options = {}) {
   if (options.type === "bar") {
     const gap = 16;
     const barWidth = (gridWidth - gap * (values.length - 1)) / values.length;
+    canvas._barHitboxes = [];
     values.forEach((value, index) => {
       const barHeight = ((value - min) / (max - min)) * gridHeight;
       const x = pad.left + index * (barWidth + gap);
       const y = pad.top + gridHeight - barHeight;
+      const isSelected = options.selectedIndex === index;
       ctx.fillStyle = options.colors?.[index % options.colors.length] || "#2563eb";
       roundRect(ctx, x, y, barWidth, barHeight, 7);
       ctx.fill();
+      if (isSelected) {
+        ctx.strokeStyle = "#172033";
+        ctx.lineWidth = 2;
+        roundRect(ctx, x - 5, y - 5, barWidth + 10, barHeight + 10, 9);
+        ctx.stroke();
+        ctx.lineWidth = 1;
+        ctx.strokeStyle = "#edf1f6";
+      }
       ctx.fillStyle = "#667085";
-      ctx.fillText(options.labels?.[index] || String(index + 1), x, height - 12);
+      ctx.textAlign = "center";
+      if (options.showValues) {
+        ctx.fillStyle = "#172033";
+        ctx.font = "700 12px Inter, sans-serif";
+        ctx.fillText(String(value), x + barWidth / 2, y - 8);
+        ctx.font = "12px Inter, sans-serif";
+        ctx.fillStyle = isSelected ? "#172033" : "#667085";
+      }
+      ctx.fillText(options.labels?.[index] || String(index + 1), x + barWidth / 2, height - 12);
+      ctx.textAlign = "left";
+      canvas._barHitboxes.push({ index, label: options.labels?.[index] || String(index + 1), value, x, y, width: barWidth, height: barHeight });
     });
     return;
   }
@@ -1087,11 +1108,13 @@ function drawAllCharts() {
     color: state.chartMode === "sales" ? "#2563eb" : "#16a34a"
   });
   drawSalesPeriodChart();
-  const stockTrend = [28, 34, 42, 55, 68, 81, 96].map((value) => Math.max(1, Math.round(value * getDemandFactor())));
+  const stockTrend = getDemandTrendValues();
   drawChart("stockCanvas", stockTrend, {
     type: "bar",
     labels: ["Sem 1", "Sem 2", "Sem 3", "Sem 4", "Sem 5", "Sem 6", "Sem 7"],
-    colors: ["#0f766e", "#16a34a", "#d97706", "#dc2626"]
+    colors: ["#0f766e", "#16a34a", "#d97706", "#dc2626"],
+    selectedIndex: state.selectedDemandWeek,
+    showValues: true
   });
   drawCustomerBehaviorChart();
   drawMarginDashboardChart();
@@ -1340,31 +1363,57 @@ function renderStockByStore(rows = getFilteredStockRows()) {
     .join("") : `<tr><td colspan="5">Nenhuma loja encontrada para os filtros atuais.</td></tr>`;
 }
 
-function renderDemandInsights(rows = getFilteredStockRows()) {
+function getDemandTrendValues() {
+  return [28, 34, 42, 55, 68, 81, 96].map((value) => Math.max(1, Math.round(value * getDemandFactor())));
+}
+
+function getSelectedDemandInfo(rows = getFilteredStockRows()) {
+  const trend = getDemandTrendValues();
+  const weekIndex = Math.min(Math.max(state.selectedDemandWeek, 0), trend.length - 1);
+  const value = trend[weekIndex];
+  const previous = weekIndex > 0 ? trend[weekIndex - 1] : value;
+  const growth = previous ? Math.round(((value - previous) / previous) * 100) : 0;
   const criticalCount = rows.filter((row) => row[4] === "Crítico").length;
   const attentionCount = rows.filter((row) => row[4] === "Atenção").length;
-  const demandGrowth = Math.max(1, Math.round(14 * getDemandFactor()));
-  const restockAmount = Math.max(40, Math.round(360 * getDemandFactor()));
+  const restockAmount = Math.max(40, Math.round(value * 3.75));
+  const topRisk = rows.find((row) => row[4] === "Crítico") || rows.find((row) => row[4] === "Atenção") || rows[0];
+  return {
+    weekIndex,
+    label: `Sem ${weekIndex + 1}`,
+    value,
+    previous,
+    growth,
+    criticalCount,
+    attentionCount,
+    restockAmount,
+    topRisk
+  };
+}
+
+function renderDemandInsights(rows = getFilteredStockRows()) {
+  const info = getSelectedDemandInfo(rows);
+  const trendLabel = info.growth >= 0 ? `+${info.growth}%` : `${info.growth}%`;
+  const riskLabel = info.topRisk ? `${info.topRisk[0]} em ${info.topRisk[1]}` : "Sem item crítico no recorte";
   qs("#demandInsights").innerHTML = `
     <article>
-      <strong>Sazonalidade</strong>
-      <span>Demanda +${demandGrowth}% para o recorte atual, com pico estimado conforme o período selecionado.</span>
+      <strong>${info.label}: ${info.value} un previstas</strong>
+      <span>Sazonalidade ${trendLabel} em relação à semana anterior no recorte filtrado.</span>
     </article>
     <article>
       <strong>Tendências</strong>
-      <span>Eletrônicos e itens de recompra rápida puxam o crescimento do consumo.</span>
+      <span>${info.growth >= 0 ? "Aceleração de consumo" : "Desaceleração de consumo"} em ${info.label}; ${riskLabel} concentra a atenção operacional.</span>
     </article>
     <article>
       <strong>Lote econômico de compra</strong>
-      <span>Compra sugerida: ${restockAmount} unidades para reduzir ruptura e custo de pedido.</span>
+      <span>Compra sugerida: ${info.restockAmount} unidades para reduzir ruptura e custo de pedido.</span>
     </article>
     <article>
       <strong>Ciclo de vida</strong>
-      <span>Smartwatch X em crescimento; Tênis Run em maturidade; Cafeteira Pro em atenção.</span>
+      <span>${info.weekIndex >= 4 ? "Produtos em crescimento exigem reforço de estoque." : "Momento adequado para monitorar giro e evitar compra antecipada."}</span>
     </article>
     <article class="wide-insight">
       <strong>Prioridade operacional</strong>
-      <span>${criticalCount} produto(s) críticos e ${attentionCount} em atenção. Repor primeiro Fone Pulse e Cafeteira Pro.</span>
+      <span>${info.criticalCount} produto(s) críticos e ${info.attentionCount} em atenção em ${info.label}. Prioridade: ${riskLabel}.</span>
     </article>
   `;
 }
@@ -1380,16 +1429,47 @@ function updateAutomationStatus() {
     : "As automações de estoque estão desativadas.";
 }
 
+function getSegmentMetrics(segment) {
+  const factor = Math.max(getGlobalFilterFactor(), 0.04);
+  const behavior = {
+    "Clientes frequentes": ["3,4 compras/mês", "72% preferência digital", "R$ 186 valor médio"],
+    "Clientes de alto valor": ["1,8 compras/mês", "64% preferência digital", "R$ 420 valor médio"],
+    "Clientes em risco": ["0,4 compras/mês", "58% preferência digital", "R$ 138 valor médio"],
+    "Novos clientes": ["1,1 compras/mês", "69% preferência digital", "R$ 156 valor médio"]
+  }[segment.name];
+  const purchaseValue = Number(behavior[0].replace(",", ".").match(/[\d.]+/)?.[0] || 0);
+  const digitalValue = Number(behavior[1].match(/\d+/)?.[0] || 0);
+  const ticketValue = Number(behavior[2].replace(/\D/g, "")) || 0;
+
+  return {
+    purchases: Math.max(0.1, purchaseValue * Math.min(factor, 1.6)).toFixed(1).replace(".", ","),
+    digital: Math.max(10, Math.min(95, Math.round(digitalValue + (state.store === "online" ? 8 : state.store === "todas" ? 0 : -4)))),
+    ticket: Math.max(25, Math.round(ticketValue * (state.store === "online" ? 1.12 : 1) * (state.region === "sul" ? 0.94 : 1)))
+  };
+}
+
 function renderSegments() {
   qs("#segmentCards").innerHTML = segments
-    .map((segment) => `
-      <button class="segment-card" data-segment="${segment.name}">
-        <strong>${segment.name}</strong>
-        <span class="segment-total">${getFilteredSegmentTotal(segment.total)}</span>
-        <p>${segment.note}</p>
-        <span>${segment.action}</span>
-      </button>
-    `)
+    .map((segment) => {
+      const metrics = getSegmentMetrics(segment);
+      const active = segment.name === state.selectedSegment ? " active" : "";
+      return `
+        <button class="segment-card${active}" data-segment="${segment.name}" type="button" aria-pressed="${segment.name === state.selectedSegment}">
+          <span class="segment-card-header">
+            <strong>${segment.name}</strong>
+            <small>${segment.channel}</small>
+          </span>
+          <span class="segment-total">${getFilteredSegmentTotal(segment.total)}</span>
+          <span class="segment-note">${segment.note}</span>
+          <span class="segment-metrics">
+            <b>${metrics.purchases}<small>compras/mês</small></b>
+            <b>${metrics.digital}%<small>digital</small></b>
+            <b>R$ ${metrics.ticket}<small>ticket</small></b>
+          </span>
+          <span class="segment-action">${segment.action}</span>
+        </button>
+      `;
+    })
     .join("");
   renderProfile();
 }
@@ -1425,31 +1505,19 @@ function renderProfile() {
 }
 
 function renderBehaviorSummary(segment) {
-  const factor = Math.max(getGlobalFilterFactor(), 0.04);
-  const behavior = {
-    "Clientes frequentes": ["3,4 compras/mês", "72% preferência digital", "R$ 186 valor médio"],
-    "Clientes de alto valor": ["1,8 compras/mês", "64% preferência digital", "R$ 420 valor médio"],
-    "Clientes em risco": ["0,4 compras/mês", "58% preferência digital", "R$ 138 valor médio"],
-    "Novos clientes": ["1,1 compras/mês", "69% preferência digital", "R$ 156 valor médio"]
-  }[segment.name];
-  const purchaseValue = Number(behavior[0].replace(",", ".").match(/[\d.]+/)?.[0] || 0);
-  const digitalValue = Number(behavior[1].match(/\d+/)?.[0] || 0);
-  const ticketValue = Number(behavior[2].replace(/\D/g, "")) || 0;
-  const adjustedPurchases = Math.max(0.1, purchaseValue * Math.min(factor, 1.6)).toFixed(1).replace(".", ",");
-  const adjustedDigital = Math.max(10, Math.min(95, Math.round(digitalValue + (state.store === "online" ? 8 : state.store === "todas" ? 0 : -4))));
-  const adjustedTicket = Math.max(25, Math.round(ticketValue * (state.store === "online" ? 1.12 : 1) * (state.region === "sul" ? 0.94 : 1)));
+  const metrics = getSegmentMetrics(segment);
 
   qs("#behaviorSummary").innerHTML = `
     <article>
-      <strong>${adjustedPurchases} compras/mês</strong>
+      <strong>${metrics.purchases} compras/mês</strong>
       <span>Frequência média de compra do segmento no recorte filtrado.</span>
     </article>
     <article>
-      <strong>${adjustedDigital}% preferência digital</strong>
+      <strong>${metrics.digital}% preferência digital</strong>
       <span>Participação de canais digitais conforme região e loja selecionadas.</span>
     </article>
     <article>
-      <strong>R$ ${adjustedTicket} valor médio</strong>
+      <strong>R$ ${metrics.ticket} valor médio</strong>
       <span>Valor médio por pedido considerado nas campanhas filtradas.</span>
     </article>
   `;
@@ -1629,6 +1697,21 @@ function bindEvents() {
     });
   });
 
+  qs("#stockCanvas").addEventListener("click", (event) => {
+    const canvas = event.currentTarget;
+    const rect = canvas.getBoundingClientRect();
+    const x = event.clientX - rect.left;
+    const y = event.clientY - rect.top;
+    const hitbox = (canvas._barHitboxes || []).find((box) =>
+      x >= box.x && x <= box.x + box.width && y >= box.y - 20 && y <= box.y + box.height + 24
+    );
+    if (!hitbox) return;
+    state.selectedDemandWeek = hitbox.index;
+    drawAllCharts();
+    renderDemandInsights(getFilteredStockRows());
+    showToast(`Previsão selecionada: ${hitbox.label}.`);
+  });
+
   [qs("#autoRestock"), qs("#emailAlerts")].forEach((input) => {
     input.addEventListener("change", updateAutomationStatus);
   });
@@ -1642,7 +1725,7 @@ function bindEvents() {
       risco: "Clientes em risco"
     };
     state.selectedSegment = labels[qs("#segmentCriterion").value];
-    renderProfile();
+    renderSegments();
     showToast("Segmentação atualizada.");
   });
 
@@ -1650,7 +1733,7 @@ function bindEvents() {
     const card = event.target.closest("[data-segment]");
     if (!card) return;
     state.selectedSegment = card.dataset.segment;
-    renderProfile();
+    renderSegments();
   });
 
   qs("#campaignForm").addEventListener("submit", (event) => {
